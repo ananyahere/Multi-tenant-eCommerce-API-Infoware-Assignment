@@ -34,8 +34,7 @@ const ownerSchema = mongoose.Schema({
     }
   },
   token: {
-    type: String,
-    required: true
+    type: String
   }
 })
 
@@ -47,14 +46,13 @@ ownerSchema.virtual("products", {
 
 ownerSchema.methods.generateOwnerAuthToken = async function() {
   const owner = this
-  const token = jwt.sign({ _id: owner._id.toString() }, process.env.JWT_SECRET_OWNER);
-
+  const token = jwt.sign({ _id: owner._id.toString() }, process.env.JWT_SECRET_OWNER)
   owner.token = token 
   owner.save()
   return token
 }
 
-ownerSchema.methods.findOwnerByCredentials = async (email, password) => {
+ownerSchema.statics.findOwnerByCredentials = async (email, password) => {
   const owner = await Owner.findOne({email})
   if(!owner) throw new Error("Unable to login owner.")
   const isMatch = await bcrypt.compare(password, owner.password)
@@ -65,11 +63,9 @@ ownerSchema.methods.findOwnerByCredentials = async (email, password) => {
 // Hash the plain text password before saving
 ownerSchema.pre("save", async function (next) {
   const owner = this;
-
   if (owner.isModified("password")) {
     owner.password = await bcrypt.hash(owner.password, 8);
   }
-
   next();
 })
 

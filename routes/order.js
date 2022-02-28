@@ -7,7 +7,8 @@ const router = new express.Router()
 
 // place order
 router.post("/orders", isUser, async(req, res)=> {
-  // exampleof req.body
+
+  //              EXAMPLE OF REQ.BODY
   // req.body = {
   //   billingAddress:"",
   //   orderDate:"",
@@ -25,11 +26,10 @@ router.post("/orders", isUser, async(req, res)=> {
   //     }
   //   ]
   // }
-  const {billingAddress, orderDate, deliveryDate, paymentMethod, totalPayment, specialRequest, orderItems} = req.body
+
+  const {billingAddress, paymentMethod, totalPayment, specialRequest, orderItems} = req.body
   const order = new Order({
-    billingAddress,
-    orderDate,
-    deliveryDate,
+    billingAddress,  
     paymentMethod,
     totalPayment,
     specialRequest
@@ -37,19 +37,29 @@ router.post("/orders", isUser, async(req, res)=> {
   const orderItemsArr=[]
 
   try{
-    for(item in orderItems){
+    let totalPayment = 0
+    for(const item of orderItems){
       const {assoicatedProduct, associatedSeller, count,price} = item
       const associatedOrder = order._id
-      const order_item = new OrderItem({
+      const assoicatedBuyer = req.user._id
+      const order_item = {
         assoicatedProduct,
         associatedSeller,
         count,
         price,
-        associatedOrder
-      })
+        associatedOrder,
+        assoicatedBuyer
+      }
+      totalPayment = totalPayment + order_item.price
       orderItemsArr.push(order_item)
     }
     await OrderItem.insertMany(orderItemsArr)
+    let today = new Date()
+    let threeDaysLater = new Date()
+    order.totalPayment = totalPayment
+    order.orderDate = new Date().toString()
+    order.deliveryDate = threeDaysLater.setDate(today.getDate() + 3).toString()
+    order.buyer = req.user._id
     await order.save()
     res.status(201).send(order)
   }catch(e){
@@ -84,8 +94,8 @@ router.get("/orders/:order_id", isOwner,async(req,res)=> {
 })
 
 //  get by buyer id
-router.get("/orders/:buyer_id", isOwner, async(req, res) => {
-  const buyer_id = req.params.order_id
+router.get("/orders/buyer/:buyer_id", isOwner, async(req, res) => {
+  const buyer_id = req.params.buyer_id
   try{
     const order = await Order.findOne({buyer: buyer_id})
     if(!order)
@@ -96,15 +106,4 @@ router.get("/orders/:buyer_id", isOwner, async(req, res) => {
   }
 })
 
-// get by order-date
-router.get("/orders/:date", isOwner, async(req, res) => {
-  const date = req.params.date
-  try{
-    const order = await Order.findOne({orderDate: date})
-    if(!order)
-      return res.status(404).send({error: `No order with the date ${date} found.`})
-    res.send(order)
-  }catch(e){
-    res.status(500).send();
-  }
-})
+module.exports = router

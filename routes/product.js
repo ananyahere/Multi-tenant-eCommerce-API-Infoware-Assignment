@@ -10,7 +10,6 @@ router.post("/product", isOwner, async(req, res) => {
     ...req.body,
     seller: req.owner._id
   })
-
   try{
     await product.save()
     res.status(201).send(product)
@@ -25,16 +24,23 @@ router.post("/products", isOwner ,async(req,res) => {
   const inputArr = req.body
   const products =[]
   try{
-    for(item in inputArr){
-      const product = new Product({
-        ...item,
+    for(const item of inputArr){
+      const {name, type, color, size, description, price} = item
+      const product = {
+        name,
+        type,
+        color,
+        size,
+        description, 
+        price,
         seller: req.owner._id
-      })
+      }
       products.push(product)
     }
-    await products.insertMany(products)
-    res.send(201).send(products)
+    await Product.insertMany(products)
+    res.status(201).send(products)
   }catch(e){
+    console.log(e)
     res.status(400).send(e)
   }
 })
@@ -48,3 +54,5 @@ router.get("/products", isUser, async(req, res) => {
     res.status(500).send()
   }
 })
+
+module.exports = router

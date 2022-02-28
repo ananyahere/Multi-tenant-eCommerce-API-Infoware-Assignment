@@ -18,13 +18,14 @@ router.post("/owners/signup", async(req, res) => {
 // login
 router.post("/owners/login", async(req,res) => {
   try{
-    const owner = await Owner.findByCredentials(
+    const owner = await Owner.findOwnerByCredentials(
       req.body.email,
       req.body.password
     )
     const token = await owner.generateOwnerAuthToken();
     res.send({ owner, token });
   }catch(e){
+    console.log(e)
     res.status(400).send(e)
   }
 })
